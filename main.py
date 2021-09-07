@@ -147,14 +147,45 @@ class K_means():
         return distance
 
     # Plot k-means clusters by different colors
-    def cluster_colored_visual(self):
+    def colored_scatter_clusters(self):
 
         # plot the different clusters with the 2 main features
         fig, ax = plt.subplots()
-        colors = {0:'red', 1:'blue', 2:'green', 3:'pink', 4:'black', 5:'orange', 6:'cyan', 7:'yellow', 8:'brown', 9:'purple'}
-        ax.scatter(df['principal_feature1'], df['principal_feature2'], c=df["cluster"].apply(lambda x: colors[x]))
+        ax.set_xlabel("Principal_feature1")
+        ax.set_ylabel("Principal_feature2")
 
-        plt.show()
+        colors = {0:'red', 1:'blue', 2:'green', 3:'pink', 4:'black', 5:'orange', 6:'cyan', 7:'yellow', 8:'brown', 9:'purple'}
+        ax.scatter(df['principal_feature1'], df['principal_feature2'], c=df["cluster"].apply(lambda x: colors[x]))        
+
+        plt.savefig('./' + "Kmeans_colored_scatter_clusters")
+    
+    # Plot detected anomalies by seperating them with colors
+    def colored_scatter_anomalies(self):
+
+        # plot the different clusters with the 2 main features
+        fig, ax = plt.subplots()
+        ax.set_xlabel("Principal_feature1")
+        ax.set_ylabel("Principal_feature2")
+
+        colors = {0:'blue', 1:'red'}
+        ax.scatter(df['principal_feature1'], df['principal_feature2'], c=df["anomaly21"].apply(lambda x: colors[x]))        
+
+        plt.savefig('./' + "Kmeans_colored_scatter_anomalies")
+    
+    # Plot histogram plot by seperating anomalies and normal data
+    def colored_histogram_anomalies(self):
+        # visualisation of anomaly throughout time (viz 1)
+        fig, ax = plt.subplots()
+        ax.set_xlabel("Time_epoch")
+        ax.set_ylabel("Occurence")
+
+        #anomaly
+        a = df.loc[df['anomaly21'] == 1, ['time_epoch', 'value']] 
+
+        ax.plot(df['time_epoch'], df['value'], color='blue')
+        ax.scatter(a['time_epoch'], a['value'], color='red')
+
+        plt.savefig('./' + "Kmeans_colored_histogram_anomalies")
     
     # For selecting best possible k value
     def anomalyDetection(self):
@@ -201,7 +232,10 @@ class K_means():
         for index, value in anomaly21_df.items():
             timestamp_dict[value] = 1
 
-        self.cluster_colored_visual()
+        # Plotting graphs
+        self.colored_scatter_clusters()
+        self.colored_scatter_anomalies()
+        self.colored_histogram_anomalies()
         
         return timestamp_dict
     
@@ -209,6 +243,33 @@ class Elliptic_Envelope():
 
     def __init__(self, timestamp_dict):
         self.timestamp_dict = timestamp_dict
+    
+    def colored_histogram_anomalies(self, df_class0, df_class1, df_class2, df_class3):
+        # plot the value repartition by categories with anomalies
+        a0 = df_class0.loc[df_class0['anomaly'] == 1, 'value']
+        b0 = df_class0.loc[df_class0['anomaly'] == -1, 'value']
+
+        a1 = df_class1.loc[df_class1['anomaly'] == 1, 'value']
+        b1 = df_class1.loc[df_class1['anomaly'] == -1, 'value']
+
+        a2 = df_class2.loc[df_class2['anomaly'] == 1, 'value']
+        b2 = df_class2.loc[df_class2['anomaly'] == -1, 'value']
+
+        a3 = df_class3.loc[df_class3['anomaly'] == 1, 'value']
+        b3 = df_class3.loc[df_class3['anomaly'] == -1, 'value']
+
+        fig, axs = plt.subplots(2,2)
+        axs[0,0].hist([a0,b0], bins=32, stacked=True, color=['blue', 'red'], label=['normal', 'anomaly'])
+        axs[0,1].hist([a1,b1], bins=32, stacked=True, color=['blue', 'red'], label=['normal', 'anomaly'])
+        axs[1,0].hist([a2,b2], bins=32, stacked=True, color=['blue', 'red'], label=['normal', 'anomaly'])
+        axs[1,1].hist([a3,b3], bins=32, stacked=True, color=['blue', 'red'], label=['normal', 'anomaly'])
+        axs[0,0].set_title("WeekEndNight")
+        axs[0,1].set_title("WeekEndLight")
+        axs[1,0].set_title("WeekDayNight")
+        axs[1,1].set_title("WeekDayLight")
+
+        plt.legend()
+        plt.savefig('./' + "EEnvelope_colored_histogram_categories")
     
     def anomalyDetection(self):
 
@@ -247,6 +308,8 @@ class Elliptic_Envelope():
         df_class3['deviation'] = envelope.decision_function(X_train)
         df_class3['anomaly'] = envelope.predict(X_train)
 
+        self.colored_histogram_anomalies(df_class0, df_class1, df_class2, df_class3)
+        
         # add the data to the main 
         df_class = pd.concat([df_class0, df_class1, df_class2, df_class3])
         df['anomaly22'] = df_class['anomaly']
@@ -276,6 +339,10 @@ class Prophet_Forecast():
         
         forecast = m.predict(dataframe)
         forecast['fact'] = dataframe['y'].reset_index(drop = True)
+
+        # Prophet plot
+        fig1 = m.plot(forecast)
+        fig1.savefig('./' + "forecast_fit_predict")
                 
         return forecast
     
@@ -294,6 +361,30 @@ class Prophet_Forecast():
         
         return forecasted
     
+    # plot timestamps
+    def trend_plot(self, pred):
+
+        # plotting timestamps
+        pd.plotting.register_matplotlib_converters()
+        pred.plot(x = 'ds', y = ['fact', 'yhat', 'yhat_upper', 'yhat_lower'])
+        plt.xlabel('Date')
+        plt.ylabel('Occurence')
+        plt.savefig('./' + "forecast_trend_plot")
+    
+    # Plot histogram plot by seperating anomalies and normal data
+    def colored_histogram_anomalies(self):
+        fig, ax = plt.subplots()
+        ax.set_xlabel("Time_epoch")
+        ax.set_ylabel("Occurence")
+
+        #anomaly
+        a = df.loc[df['anomaly23'] == 1, ['time_epoch', 'value']] 
+
+        ax.plot(df['time_epoch'], df['value'], color='blue')
+        ax.scatter(a['time_epoch'], a['value'], color='red')
+
+        plt.savefig('./' + "forecast_colored_histogram_anomalies")
+    
     def anomalyDetection(self):
         
         pred = self.fit_predict_model(df_forecast)
@@ -310,6 +401,9 @@ class Prophet_Forecast():
             else:
                 self.timestamp_dict[value] = 1
 
+        self.trend_plot(pred)
+        self.colored_histogram_anomalies()
+        
         return self.timestamp_dict
 
 class Markov_Chains():
@@ -358,6 +452,21 @@ class Markov_Chains():
         else:
             return 1
 
+    # Plot histogram plot by seperating anomalies and normal data
+    def colored_histogram_anomalies(self):
+        # visualisation of anomaly throughout time (viz 1)
+        fig, ax = plt.subplots()
+        ax.set_xlabel("Time_epoch")
+        ax.set_ylabel("Occurence")
+
+        #anomaly
+        a = df.loc[df['anomaly24'] == 1, ['time_epoch', 'value']] 
+
+        ax.plot(df['time_epoch'], df['value'], color='blue')
+        ax.scatter(a['time_epoch'], a['value'], color='red')
+
+        plt.savefig('./' + "MChains_colored_histogram_anomalies")
+
     def anomalyDetection(self):
 
         # definition of the different state
@@ -383,6 +492,8 @@ class Markov_Chains():
             else:
                 self.timestamp_dict[value] = 1
 
+        self.colored_histogram_anomalies()
+        
         return self.timestamp_dict
 
 class Isolation_Forest():
@@ -390,6 +501,21 @@ class Isolation_Forest():
     def __init__(self, timestamp_dict):
         self.timestamp_dict = timestamp_dict
 
+    # Plot histogram plot by seperating anomalies and normal data
+    def colored_histogram_anomalies(self):
+        # visualisation of anomaly throughout time (viz 1)
+        fig, ax = plt.subplots()
+        ax.set_xlabel("Time_epoch")
+        ax.set_ylabel("Occurence")
+
+        #anomaly
+        a = df.loc[df['anomaly25'] == 1, ['time_epoch', 'value']] 
+
+        ax.plot(df['time_epoch'], df['value'], color='blue')
+        ax.scatter(a['time_epoch'], a['value'], color='red')
+
+        plt.savefig('./' + "IForest_colored_histogram_anomalies")
+    
     def anomalyDetection(self):
         
         # Take useful feature and standardize them 
@@ -414,12 +540,29 @@ class Isolation_Forest():
             else:
                 self.timestamp_dict[value] = 1
 
+        self.colored_histogram_anomalies()
+        
         return self.timestamp_dict
 
 class SVM():
 
     def __init__(self, timestamp_dict):
         self.timestamp_dict = timestamp_dict
+    
+    # Plot histogram plot by seperating anomalies and normal data
+    def colored_histogram_anomalies(self):
+        # visualisation of anomaly throughout time (viz 1)
+        fig, ax = plt.subplots()
+        ax.set_xlabel("Time_epoch")
+        ax.set_ylabel("Occurence")
+
+        #anomaly
+        a = df.loc[df['anomaly26'] == 1, ['time_epoch', 'value']] 
+
+        ax.plot(df['time_epoch'], df['value'], color='blue')
+        ax.scatter(a['time_epoch'], a['value'], color='red')
+
+        plt.savefig('./' + "SVM_colored_histogram_anomalies")
     
     def anomalyDetection(self):
         # Take useful feature and standardize them 
@@ -444,6 +587,8 @@ class SVM():
             else:
                 self.timestamp_dict[value] = 1
 
+        self.colored_histogram_anomalies()
+        
         return self.timestamp_dict
 
 class LSTM():
@@ -638,19 +783,19 @@ K_means_anomalies = K_means().anomalyDetection()
 
 # Gaussian + Elliptic Envelope implementation
 # return type: dict
-#EllipticEnvelope_anomalies = Elliptic_Envelope(K_means_anomalies).anomalyDetection()
+EllipticEnvelope_anomalies = Elliptic_Envelope(K_means_anomalies).anomalyDetection()
 
 # Prophet Forecasting implementation
-#Forecast_anomalies = Prophet_Forecast(EllipticEnvelope_anomalies).anomalyDetection()
+Forecast_anomalies = Prophet_Forecast(EllipticEnvelope_anomalies).anomalyDetection()
 
 # Markov Chains implementation
-#Markov_Chains_anomalies = Markov_Chains(Forecast_anomalies).anomalyDetection()
+Markov_Chains_anomalies = Markov_Chains(Forecast_anomalies).anomalyDetection()
 
 # Isolation Forest implementation
-#Isolation_Forest_anomalies = Isolation_Forest(Markov_Chains_anomalies).anomalyDetection()
+Isolation_Forest_anomalies = Isolation_Forest(Markov_Chains_anomalies).anomalyDetection()
 
 # Support Vector Machine (SVM) implementation
-#SVM_anomalies = SVM(Isolation_Forest_anomalies).anomalyDetection()
+SVM_anomalies = SVM(Isolation_Forest_anomalies).anomalyDetection()
 
 # Long short-term memory (LSTM) implementation
 #LSTM_anomalies = LSTM(SVM_anomalies).anomalyDetection()
@@ -659,7 +804,7 @@ match_value = str(df['hour'].iloc[-1])
 
 ### FILE PART ###
 
-data_frame = pd.DataFrame(K_means_anomalies.items(), columns=['hour', 'CommonBy'])
+data_frame = pd.DataFrame(SVM_anomalies.items(), columns=['hour', 'CommonBy'])
 data_frame['hour'] = pd.to_datetime(data_frame['hour'])
 data_frame = data_frame.sort_values(by="hour")
 
@@ -688,17 +833,9 @@ df_merged_all =   df_all.merge(df, how='inner', on='hour')
 #risk_histogram(df_monthly, df_merged_month, "monthly")
 risk_histogram(df, df_merged_all, "all")
 
-######## INFO PAGE PART ########
 
-
-
-
-
-######## FILE PART ########
-
-
-for w in sorted(K_means_anomalies, key=K_means_anomalies.get, reverse=True):
-    if K_means_anomalies[w] == 1:
+for w in sorted(SVM_anomalies, key=SVM_anomalies.get, reverse=True):
+    if SVM_anomalies[w] == 1:
         break
     #print(w, SVM_anomalies[w])
     
